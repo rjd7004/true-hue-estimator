@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>True Hue Estimates</title>
+<meta name="robots" content="noindex, nofollow">
+
+<!-- PWA setup -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<meta name="theme-color" content="#277da1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="True Hue Estimates">
+<link rel="stylesheet" href="common.css">
+</head>
+<body data-category="home">
+
+<!-- The lock screen, header + nav, icon set, print area, and color-zoom overlay
+     are shared by every page and injected by common.js (renderShell). -->
+<div class="wrap" id="appWrap">
+  <div id="siteHeader"></div>
+
+  <!-- ============ HOME ============ -->
+  <section class="page" data-page="home">
+    <div class="home-intro">
+      <h1>What are we estimating?</h1>
+      <p>Pick the type of job to start an estimate.</p>
+    </div>
+    <div class="home-groups">
+      <div class="home-group">
+        <h2>Residential</h2>
+        <div class="tile-row">
+          <a class="type-tile t-res-int" href="residential.html#interior" aria-label="Residential interior">
+            <svg class="tile-icon" aria-hidden="true"><use href="#ico-res-int"/></svg>
+            <span class="tile-label">Interior</span>
+            <span class="tile-status ready" data-draft-status-for="residential-interior">Ready</span>
+          </a>
+          <a class="type-tile t-res-ext" href="residential.html#exterior" aria-label="Residential exterior">
+            <svg class="tile-icon" aria-hidden="true"><use href="#ico-res-ext"/></svg>
+            <span class="tile-label">Exterior</span>
+            <span class="tile-status ready" data-draft-status-for="residential-exterior">Ready</span>
+          </a>
+        </div>
+      </div>
+      <div class="home-group">
+        <h2>Commercial</h2>
+        <div class="tile-row">
+          <a class="type-tile t-com-int" href="commercial.html#interior" aria-label="Commercial interior">
+            <svg class="tile-icon" aria-hidden="true"><use href="#ico-com-int"/></svg>
+            <span class="tile-label">Interior</span>
+            <span class="tile-status ready" data-draft-status-for="commercial-interior">Ready</span>
+          </a>
+          <a class="type-tile t-com-ext" href="commercial.html#exterior" aria-label="Commercial exterior">
+            <svg class="tile-icon" aria-hidden="true"><use href="#ico-com-ext"/></svg>
+            <span class="tile-label">Exterior</span>
+            <span class="tile-status ready" data-draft-status-for="commercial-exterior">Ready</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script src="common.js"></script>
+</body>
+</html>

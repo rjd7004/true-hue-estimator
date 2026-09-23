@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Residential — True Hue Estimates</title>
+<meta name="robots" content="noindex, nofollow">
+
+<!-- PWA setup -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<meta name="theme-color" content="#277da1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="True Hue Estimates">
+<link rel="stylesheet" href="common.css">
+</head>
+<body data-category="residential">
+
+<!-- The lock screen, header + nav, icon set, print area, and color-zoom overlay
+     are shared by every page and injected by common.js (renderShell). -->
+<div class="wrap" id="appWrap">
+  <div id="siteHeader"></div>
+
+  <!-- ============ RESIDENTIAL INTERIOR (the original estimator) ============ -->
+  <section class="page" data-page="residential-interior">
+  <div class="page-head t-res-int">
+    <span class="type-bar"></span>
+    <div>
+      <h1>Residential interior</h1>
+      <p>Enter the job details and the totals update live.</p>
+    </div>
+  </div>
+
+  <!-- The form is built by createEstimator() from ESTIMATOR_CONFIGS["residential-interior"] -->
+  <div class="estimator" data-estimator="residential-interior"></div>
+  </section>
+
+
+  <section class="page" data-page="residential-exterior">
+    <div class="page-head t-res-ext">
+      <span class="type-bar"></span>
+      <div>
+        <h1>Residential exterior</h1>
+        <p>Enter the job details and the totals update live.</p>
+      </div>
+    </div>
+    <!-- Built by createEstimator() from ESTIMATOR_CONFIGS["residential-exterior"] -->
+    <div class="estimator" data-estimator="residential-exterior"></div>
+  </section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.4/dist/JsBarcode.all.min.js"></script>
+<script src="common.js"></script>
+<script src="residential.js"></script>
+</body>
+</html>

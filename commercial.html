@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Commercial — True Hue Estimates</title>
+<meta name="robots" content="noindex, nofollow">
+
+<!-- PWA setup -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<meta name="theme-color" content="#277da1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="True Hue Estimates">
+<link rel="stylesheet" href="common.css">
+</head>
+<body data-category="commercial">
+
+<!-- The lock screen, header + nav, icon set, print area, and color-zoom overlay
+     are shared by every page and injected by common.js (renderShell). -->
+<div class="wrap" id="appWrap">
+  <div id="siteHeader"></div>
+
+  <section class="page" data-page="commercial-interior">
+    <div class="page-head t-com-int">
+      <span class="type-bar"></span>
+      <div>
+        <h1>Commercial interior</h1>
+        <p>Priced per square foot — set your rates, then enter the areas.</p>
+      </div>
+    </div>
+    <!-- Built by createCommercialEstimator() from COMMERCIAL_CONFIGS["commercial-interior"] -->
+    <div class="estimator" data-estimator="commercial-interior"></div>
+  </section>
+
+  <section class="page" data-page="commercial-exterior">
+    <div class="page-head t-com-ext">
+      <span class="type-bar"></span>
+      <div>
+        <h1>Commercial exterior</h1>
+        <p>Priced per square foot — set your rates, then enter the areas.</p>
+      </div>
+    </div>
+    <!-- Built by createCommercialEstimator() from COMMERCIAL_CONFIGS["commercial-exterior"] -->
+    <div class="estimator" data-estimator="commercial-exterior"></div>
+  </section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.4/dist/JsBarcode.all.min.js"></script>
+<script src="common.js"></script>
+<script src="commercial.js"></script>
+</body>
+</html>
