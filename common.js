@@ -117,6 +117,7 @@ function renderShell(){
 
     <div class="header-tools">
       <span class="version-label" id="versionLabel"></span>
+      <a class="header-link" id="settingsLink" href="settings.html" aria-label="Settings"><span aria-hidden="true">⚙</span><span class="header-link-text">Settings</span></a>
       <button type="button" class="small theme-toggle" id="themeToggleBtn" onclick="toggleTheme()">🌙 Dark mode</button>
     </div>
   </header>
@@ -145,7 +146,7 @@ const CONFIG = {
   website: "truehuepaintingco.com",
   phone: "(402) 202-6216",
   instagram: "truehuepaintingco",
-  version: "7.4",
+  version: "7.5",
   // Name + mailing address printed on the Notice of Cancellation (where a
   // customer sends it to cancel). Keep in sync with the Services Agreement.
   noticeName: "True Hue Painting Co.",
@@ -234,6 +235,137 @@ function cancellationDeadline(transactionDate){
     if (d.getDay() !== 0 && !isFederalHoliday(d)) counted++;
   }
   return d;
+}
+
+/* ============================================================
+   SETTINGS — defaults for new estimates, editable on settings.html
+   (v7.5). Saved per device in localStorage under SETTINGS_KEY, and
+   shared between phones by exporting/importing a settings file.
+   Anything missing or invalid falls back to BUILTIN_SETTINGS, so an
+   untouched device behaves exactly like v7.4.
+   Settings only feed NEW estimates (page load with no draft, or
+   "Start new estimate"); a restored draft or loaded file keeps its own
+   numbers.
+   ============================================================ */
+const SETTINGS_KEY = 'thpc_settings';
+const SETTINGS_FILE_TYPE = 'true-hue-settings';
+
+// The Commercial rate fields per page — shared by commercial.js (the Rates
+// card) and settings.js (the default rates), so labels live in one place.
+const COMMERCIAL_RATE_FIELDS = {
+  'commercial-interior': [
+    { key: 'walls',     label: 'Walls ($ / sq ft)' },
+    { key: 'ceiling',   label: 'Ceilings ($ / sq ft)' },
+    { key: 'door',      label: 'Doors ($ / door)' },
+    { key: 'trim',      label: 'Trim ($ / linear ft)' },
+    { key: 'baseboard', label: 'Baseboard ($ / linear ft)' },
+  ],
+  'commercial-exterior': [
+    { key: 'walls',  label: 'Walls ($ / sq ft)' },
+    { key: 'door',   label: 'Doors ($ / door)' },
+    { key: 'window', label: 'Windows ($ / window)' },
+  ],
+};
+
+const DEFAULT_NOTES = `1. Change Orders: This estimate covers only the exact scope of work listed above. Any additional work requested by the client, or necessary repairs discovered after commencement (e.g., hidden drywall water damage), will require a written and signed Change Order specifying the additional cost before work continues.
+
+2. Site Preparation: The client is responsible for removing fragile items and electronics from the work area prior to our arrival.
+
+3. Lead-Based Paint: If the property was built prior to 1978 and lead-based paint is discovered, work will be paused, and the estimate will be revised to reflect necessary EPA RRP compliance procedures.`;
+
+// A fresh copy every call, so callers can edit it freely.
+function builtinSettings(){
+  const commercialRates = {};
+  Object.entries(COMMERCIAL_RATE_FIELDS).forEach(([page, fields]) => {
+    commercialRates[page] = Object.fromEntries(fields.map(f => [f.key, 0]));
+  });
+  return {
+    crew: [
+      { name: 'Employee 1', rate: 20, prod: 90 },
+      { name: 'Employee 2', rate: 20, prod: 90 },
+    ],
+    newEmployee: { rate: 20, prod: 90 },   // "+ Add employee" on an estimate
+    employeeBurden: 15,
+    markupPct: 30,                         // Residential only
+    ccSurchargePct: 2.6,
+    minJobCharge: 300,
+    validDays: 10,
+    notes: DEFAULT_NOTES,
+    commercialRates,
+  };
+}
+
+// Takes anything (saved JSON, an imported file, the settings form) and
+// returns a complete, valid settings object — bad or missing values fall
+// back to the built-in ones.
+function normalizeSettings(raw){
+  const out = builtinSettings();
+  if (!raw || typeof raw !== 'object') return out;
+  const num = (v, fallback) => {
+    const n = typeof v === 'number' ? v : parseFloat(v);
+    return (isFinite(n) && n >= 0) ? n : fallback;
+  };
+  ['employeeBurden', 'markupPct', 'ccSurchargePct', 'minJobCharge', 'validDays']
+    .forEach(k => { out[k] = num(raw[k], out[k]); });
+  if (typeof raw.notes === 'string') out.notes = raw.notes;
+  if (raw.newEmployee && typeof raw.newEmployee === 'object'){
+    out.newEmployee = {
+      rate: num(raw.newEmployee.rate, out.newEmployee.rate),
+      prod: num(raw.newEmployee.prod, out.newEmployee.prod),
+    };
+  }
+  if (Array.isArray(raw.crew) && raw.crew.length){
+    out.crew = raw.crew.slice(0, 25).map((c, i) => ({
+      name: String((c && c.name) ?? '').trim().slice(0, 60) || `Employee ${i + 1}`,
+      rate: num(c && c.rate, out.newEmployee.rate),
+      prod: num(c && c.prod, out.newEmployee.prod),
+    }));
+  }
+  Object.entries(COMMERCIAL_RATE_FIELDS).forEach(([page, fields]) => {
+    const saved = raw.commercialRates && raw.commercialRates[page];
+    fields.forEach(f => { out.commercialRates[page][f.key] = num(saved && saved[f.key], 0); });
+  });
+  return out;
+}
+
+function getSettings(){
+  let raw = null;
+  try { raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null'); } catch (e) { /* ignore */ }
+  return normalizeSettings(raw);
+}
+function hasCustomSettings(){
+  try { return localStorage.getItem(SETTINGS_KEY) !== null; } catch (e) { return false; }
+}
+// Returns true if it stuck (storage can be full or blocked).
+function saveSettings(settings){
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(normalizeSettings(settings)));
+    return true;
+  } catch (e){ return false; }
+}
+function clearSettings(){
+  try { localStorage.removeItem(SETTINGS_KEY); } catch (e) { /* ignore */ }
+}
+
+// The starting value of every default-driven field on one estimate page,
+// by data-f name, as the strings an <input> holds.
+function estimateDefaults(key){
+  const s = getSettings();
+  const d = {
+    validDays: String(s.validDays),
+    markupPct: String(s.markupPct),
+    employeeBurden: String(s.employeeBurden),
+    ccSurchargePct: String(s.ccSurchargePct),
+    minJobCharge: String(s.minJobCharge),
+    notes: s.notes,
+  };
+  Object.entries(s.commercialRates[key] || {}).forEach(([k, v]) => { d[`rate-${k}`] = String(v); });
+  return d;
+}
+
+// Safe text for HTML attributes and element content.
+function escapeHtml(str){
+  return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 renderShell(); // header, nav, lock screen, icons, print area — before anything below looks them up
@@ -445,10 +577,11 @@ function toggleTheme(){
 })();
 
 /* ============================================================
-   PAGES & NAVIGATION — the app is three files:
+   PAGES & NAVIGATION — the app is four files:
      index.html        Home
      residential.html  Residential interior + exterior  (#interior / #exterior)
      commercial.html   Commercial interior + exterior   (#interior / #exterior)
+     settings.html     Settings (defaults for new estimates; v7.5)
    Each file has one <section class="page" data-page="..."> per page
    it holds, and the hash picks which one shows. <body data-category>
    says which file this is. Links between files are ordinary links.
@@ -459,6 +592,7 @@ const PAGES = {
   'residential-exterior': { title: 'Residential exterior', group: 'residential', file: 'residential.html', hash: 'exterior', color: 'var(--brand-green)' },
   'commercial-interior':  { title: 'Commercial interior',  group: 'commercial',  file: 'commercial.html',  hash: 'interior', color: 'var(--brand-orange)' },
   'commercial-exterior':  { title: 'Commercial exterior',  group: 'commercial',  file: 'commercial.html',  hash: 'exterior', color: 'var(--brand-red)' },
+  'settings':             { title: 'Settings',             group: 'settings',    file: 'settings.html',    hash: '' },
 };
 const CURRENT_CATEGORY = document.body.dataset.category || 'home';
 // Home's active-tab underline is the full five-color stripe.
@@ -466,7 +600,7 @@ const HOME_TAB_COLOR = 'linear-gradient(90deg, var(--brand-red) 0 20%, var(--bra
 
 // Which page of THIS file to show. No/unknown hash = the file's first page.
 function pageFromHash(){
-  if (CURRENT_CATEGORY === 'home') return 'home';
+  if (CURRENT_CATEGORY === 'home' || CURRENT_CATEGORY === 'settings') return CURRENT_CATEGORY;
   const h = location.hash.replace(/^#\/?/, '').replace(/\/+$/, '');
   const key = `${CURRENT_CATEGORY}-${h}`;
   return PAGES[key] ? key : `${CURRENT_CATEGORY}-interior`;
@@ -487,6 +621,8 @@ function showPage(key, isNavigation){
   });
   const homeTab = document.querySelector('.nav-tab[data-nav-group="home"]');
   if (key === 'home') homeTab.setAttribute('aria-current', 'page'); else homeTab.removeAttribute('aria-current');
+  const settingsLink = $('settingsLink');
+  if (key === 'settings') settingsLink.setAttribute('aria-current', 'page'); else settingsLink.removeAttribute('aria-current');
 
   document.title = key === 'home' ? 'True Hue Estimates' : `${page.title} — True Hue Estimates`;
   closeNavMenus();
@@ -584,6 +720,7 @@ function flushAllDrafts(){ Object.values(ESTIMATORS).forEach(inst => inst.flushD
 
 /* ---------- Shared form cards ---------- */
 function clientCardHtml(){
+  const S = getSettings();
   return `
       <div class="card">
         <div class="card-header" onclick="toggleCard(this)">
@@ -606,13 +743,14 @@ function clientCardHtml(){
             <div class="field"><label>Phone</label><input type="tel" data-f="clientPhone" placeholder="(402) 555-0100"></div>
             <div class="field"><label>Email</label><input type="email" data-f="clientEmail" placeholder="jordan@email.com"></div>
             <div class="field"><label>Estimate date</label><input type="date" data-f="estDate"></div>
-            <div class="field"><label>Valid for (days)</label><input type="number" data-f="validDays" value="10" min="0"></div>
+            <div class="field"><label>Valid for (days)</label><input type="number" data-f="validDays" value="${S.validDays}" min="0"></div>
           </div>
         </div>
       </div>`;
 }
 
 function laborCardHtml(){
+  const S = getSettings();
   return `
       <div class="card">
         <div class="card-header" onclick="toggleCard(this)">
@@ -629,7 +767,7 @@ function laborCardHtml(){
           </div>
 
           <div class="room-section-label">Employee burden</div>
-          <div class="field"><label>Employee burden (%)</label><input type="number" data-f="employeeBurden" value="15" min="0" step="1"></div>
+          <div class="field"><label>Employee burden (%)</label><input type="number" data-f="employeeBurden" value="${S.employeeBurden}" min="0" step="1"></div>
           <p class="hint">Added on top of pay rate to account for insurance and other per-employee costs — e.g. a $20/hr rate with a 15% burden costs $23/hr in the estimate. Pay rate above still shows what the employee actually earns.</p>
         </div>
       </div>`;
@@ -637,13 +775,14 @@ function laborCardHtml(){
 
 // withMarkup: Residential prices by cost + markup; Commercial prices by rate (no markup field).
 function feesCardHtml({ withMarkup, minHint }){
+  const S = getSettings();
   const markupAndCard = withMarkup ? `
           <div class="grid cols-2">
-            <div class="field"><label>Markup / profit (%)</label><input type="number" data-f="markupPct" value="30" min="0" step="1"></div>
-            <div class="field"><label>Credit card surcharge (%)</label><input type="number" data-f="ccSurchargePct" value="2.6" min="0" step="0.1"></div>
+            <div class="field"><label>Markup / profit (%)</label><input type="number" data-f="markupPct" value="${S.markupPct}" min="0" step="1"></div>
+            <div class="field"><label>Credit card surcharge (%)</label><input type="number" data-f="ccSurchargePct" value="${S.ccSurchargePct}" min="0" step="0.1"></div>
           </div>` : `
           <div class="grid cols-2">
-            <div class="field"><label>Credit card surcharge (%)</label><input type="number" data-f="ccSurchargePct" value="2.6" min="0" step="0.1"></div>
+            <div class="field"><label>Credit card surcharge (%)</label><input type="number" data-f="ccSurchargePct" value="${S.ccSurchargePct}" min="0" step="0.1"></div>
           </div>`;
   return `
       <div class="card">
@@ -653,7 +792,7 @@ function feesCardHtml({ withMarkup, minHint }){
         </div>
         <div class="card-body">${markupAndCard}
           <p class="hint">Applied to the ${withMarkup ? 'rounded ' : ''}total on the customer's printed estimate, labeled as a Credit Card Processing Surcharge — separate from the Cash Price, which has no fee added.</p>
-          <div class="field" style="margin-top:14px;"><label>Minimum job charge ($)</label><input type="number" data-f="minJobCharge" value="300" min="0" step="10"></div>
+          <div class="field" style="margin-top:14px;"><label>Minimum job charge ($)</label><input type="number" data-f="minJobCharge" value="${S.minJobCharge}" min="0" step="10"></div>
           <p class="hint">${minHint}</p>
         </div>
       </div>`;
@@ -667,11 +806,7 @@ function notesCardHtml(){
           <span class="chevron">⌄</span>
         </div>
         <div class="card-body">
-          <textarea data-f="notes" style="min-height:180px;">1. Change Orders: This estimate covers only the exact scope of work listed above. Any additional work requested by the client, or necessary repairs discovered after commencement (e.g., hidden drywall water damage), will require a written and signed Change Order specifying the additional cost before work continues.
-
-2. Site Preparation: The client is responsible for removing fragile items and electronics from the work area prior to our arrival.
-
-3. Lead-Based Paint: If the property was built prior to 1978 and lead-based paint is discovered, work will be paused, and the estimate will be revised to reflect necessary EPA RRP compliance procedures.</textarea>
+          <textarea data-f="notes" style="min-height:180px;">${escapeHtml(getSettings().notes)}</textarea>
         </div>
       </div>`;
 }
@@ -761,18 +896,24 @@ function supplyProductHtml(){
 }
 
 function employeeRowHtml(id, name, rate, prod){
+  const NE = getSettings().newEmployee;
   return `
       <label class="check enabled-check">
         <input type="checkbox" class="e-enabled" checked onchange="this.closest('.employee').classList.toggle('disabled', !this.checked)">
       </label>
       <div class="field" style="max-width:170px;">
         <label>Name</label>
-        <input type="text" class="e-name" value="${name || 'Employee ' + id}">
+        <input type="text" class="e-name" value="${escapeHtml(name || 'Employee ' + id)}">
       </div>
-      <div class="field"><label>Pay rate ($ / hour)</label><input type="number" class="e-rate" value="${rate ?? 20}" min="0" step="0.5"></div>
-      <div class="field"><label>Production rate (sq ft / hour)</label><input type="number" class="e-prod" value="${prod ?? 90}" min="0" step="5"></div>
+      <div class="field"><label>Pay rate ($ / hour)</label><input type="number" class="e-rate" value="${rate ?? NE.rate}" min="0" step="0.5"></div>
+      <div class="field"><label>Production rate (sq ft / hour)</label><input type="number" class="e-prod" value="${prod ?? NE.prod}" min="0" step="5"></div>
       <button type="button" class="ghost" title="Remove employee" onclick="EST(this).removeEmployee(${id})">✕</button>
     `;
+}
+
+// The crew every new estimate starts with (Settings → Crew).
+function addStartingCrew(addEmployee){
+  getSettings().crew.forEach(c => addEmployee(c.name, c.rate, c.prod));
 }
 
 /* ---------- Materials, labor, and pricing rules ---------- */
@@ -1187,12 +1328,11 @@ function loadSharedFields($, data){
   if (data.notes !== undefined) $('notes').value = data.notes;
 }
 
-// "Start new estimate": client fields cleared, settings back to their
-// built-in defaults (defaultValue = the value in the markup), today's date.
-function resetSharedFields($, extraIds){
+// "Start new estimate": client fields cleared, defaults re-read from
+// Settings (so a change made since this page loaded still applies), today's date.
+function resetSharedFields($, key){
   ['clientName','jobAddress','clientPhone','clientEmail'].forEach(id => $(id).value = '');
-  ['validDays','markupPct','employeeBurden','ccSurchargePct','minJobCharge','notes', ...(extraIds || [])]
-    .forEach(id => { const el = $(id); if (el) el.value = el.defaultValue; });
+  Object.entries(estimateDefaults(key)).forEach(([id, v]) => { const el = $(id); if (el) el.value = v; });
   $('estDate').value = todayISO();
   $('projectNumber').value = generateProjectNumber();
 }

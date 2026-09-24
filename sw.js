@@ -18,7 +18,7 @@
    a file in the ASSETS list below, or want to force-purge old cached files.
    ========================================================================== */
 
-const CACHE_NAME = 'true-hue-estimator-v4'; // v4: v7.3 added commercial.js
+const CACHE_NAME = 'true-hue-estimator-v5'; // v5: v7.5 added settings.html + settings.js
 const NETWORK_TIMEOUT_MS = 4000;
 
 const ASSETS = [
@@ -26,10 +26,12 @@ const ASSETS = [
   './index.html',
   './residential.html',
   './commercial.html',
+  './settings.html',
   './common.css',
   './common.js',
   './residential.js',
   './commercial.js',
+  './settings.js',
   './manifest.json',
   './sw-colors.json',
   './logo-light.svg',

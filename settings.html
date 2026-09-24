@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — True Hue Estimates</title>
+<meta name="robots" content="noindex, nofollow">
+
+<!-- PWA setup -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<meta name="theme-color" content="#277da1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="True Hue Estimates">
+<link rel="stylesheet" href="common.css">
+</head>
+<body data-category="settings">
+
+<!-- The lock screen, header + nav, icon set, print area, and color-zoom overlay
+     are shared by every page and injected by common.js (renderShell). -->
+<div class="wrap" id="appWrap">
+  <div id="siteHeader"></div>
+
+  <section class="page" data-page="settings">
+    <div class="page-head t-settings">
+      <span class="type-bar"></span>
+      <div>
+        <h1>Settings</h1>
+        <p>Defaults for new estimates on this device. Drafts and saved estimate files keep their own numbers.</p>
+      </div>
+    </div>
+    <!-- Built by settings.js -->
+    <div data-settings></div>
+  </section>
+
+</div>
+
+<script src="common.js"></script>
+<script src="settings.js"></script>
+</body>
+</html>

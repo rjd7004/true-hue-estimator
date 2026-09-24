@@ -105,6 +105,15 @@
   .header-tools{ grid-area:tools; display:flex; align-items:center; gap:12px; }
   .theme-toggle{ display:flex; align-items:center; gap:6px; white-space:nowrap; }
   .version-label{ font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums; white-space:nowrap; }
+  /* Settings link (v7.5) — sized like the small dark-mode button next to it */
+  a.header-link{
+    display:flex; align-items:center; gap:6px; white-space:nowrap;
+    font-size:12.5px; font-weight:600; text-decoration:none; color:var(--ink);
+    border:1px solid var(--line); border-radius:7px; background:var(--panel); padding:6px 10px;
+  }
+  a.header-link:hover{ border-color:var(--accent); }
+  a.header-link[aria-current="page"]{ border-color:var(--ink); }
+  @media (max-width:480px){ .header-link-text{ display:none; } }
   @media (max-width:760px){
     header.brand{ grid-template-columns:auto auto; grid-template-areas:"logo tools" "nav nav"; }
     .brand-mark{ height:32px; }
@@ -171,6 +180,35 @@
   .page-head{ display:flex; align-items:stretch; gap:12px; margin:0 0 20px; }
   .page-head h1{ font-size:21px; line-height:1.2; margin:0 0 3px; }
   .page-head p{ margin:0; color:var(--muted); font-size:13.5px; }
+  .t-settings{ --type-color: var(--ink); }
+
+  /* ---- Settings (v7.5) ---- */
+  .settings-status{ font-size:13px; color:var(--muted); margin:6px 0 14px; }
+  .settings-status.unsaved{ color:var(--ink); font-weight:600; }
+  .crew-row .field:first-child{ flex:1.3; }
+  button:disabled{ opacity:.45; cursor:default; }
+  button:disabled:hover{ border-color:var(--line); }
+  /* Phones: name on its own line, rates side by side under it */
+  @media (max-width:560px){
+    .employee.crew-row{ display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; }
+    .employee.crew-row .field:first-child{ grid-column:1 / 3; max-width:none !important; }
+    .employee.crew-row button.ghost{ grid-column:3; grid-row:1; }
+  }
+  /* One column: the form comes first, and a bar pinned to the bottom
+     offers Save whenever something has changed. */
+  .settings-savebar{ display:none; }
+  @media (max-width:880px){
+    .settings-layout .summary{ order:0; }
+    .settings-savebar.visible{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      position:fixed; left:0; right:0; bottom:0; z-index:40;
+      padding:12px 20px calc(12px + env(safe-area-inset-bottom, 0px));
+      background:var(--panel); border-top:1px solid var(--line);
+      box-shadow:0 -4px 16px rgba(0,0,0,.08);
+      font-size:13.5px; font-weight:600;
+    }
+    .settings-layout{ padding-bottom:70px; }
+  }
 
   /* ---- Home ---- */
   .home-intro h1{ font-size:24px; line-height:1.2; margin:0 0 4px; }

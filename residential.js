@@ -558,10 +558,7 @@ function createEstimator(root, key, cfg){
       row.querySelector('.e-enabled').checked = enabled;
       row.classList.toggle('disabled', !enabled);
     });
-    if (!list || list.length === 0){
-      addEmployee('Employee 1', 20, 90);
-      addEmployee('Employee 2', 20, 90);
-    }
+    if (!list || list.length === 0) addStartingCrew(addEmployee);
   }
 
   function exportEstimate(){ downloadEstimateFile(getEstimateData()); }
@@ -576,7 +573,7 @@ function createEstimator(root, key, cfg){
     $('wallsList').innerHTML = '';
     wallCount = 0;
     loadEmployees([]);
-    resetSharedFields($);
+    resetSharedFields($, key);
     recalc();
     drafts.clear();
   }
@@ -585,8 +582,7 @@ function createEstimator(root, key, cfg){
   $('estDate').value = todayISO();
   $('projectNumber').value = generateProjectNumber();
   addRoom();                           // start with one room / exterior
-  addEmployee('Employee 1', 20, 90);
-  addEmployee('Employee 2', 20, 90);
+  addStartingCrew(addEmployee);        // Settings → Crew
   recalc();
   drafts.restore();
 

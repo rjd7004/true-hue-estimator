@@ -41,13 +41,7 @@ const COMMERCIAL_CONFIGS = {
       productsHint: 'Each product picks the surfaces it covers. A surface is billed at its rate once any product here covers it.',
     },
     wallsHint: 'For a single wall or partial job — just a width and height, no doors/length.',
-    rates: [
-      { key: 'walls',     label: 'Walls ($ / sq ft)' },
-      { key: 'ceiling',   label: 'Ceilings ($ / sq ft)' },
-      { key: 'door',      label: 'Doors ($ / door)' },
-      { key: 'trim',      label: 'Trim ($ / linear ft)' },
-      { key: 'baseboard', label: 'Baseboard ($ / linear ft)' },
-    ],
+    rates: COMMERCIAL_RATE_FIELDS['commercial-interior'], // defined in common.js
     notesPlaceholder: 'Additional notes for this area (optional) — e.g. after-hours work, protect furniture and flooring',
     ratesHint: 'What the customer pays for each surface on this job. Walls and ceilings are per square foot of surface, not per coat.',
     rateOnlyHint: 'Doors, trim, and baseboard are billed by rate only — no separate cost is figured for them.',
@@ -67,11 +61,7 @@ const COMMERCIAL_CONFIGS = {
       productsHint: 'Paint and primer cover the full wall area all the way around: (length + width) × 2 × height.',
     },
     wallsHint: 'For one side of a building or a partial job — just a width and height, no doors/windows/length.',
-    rates: [
-      { key: 'walls',  label: 'Walls ($ / sq ft)' },
-      { key: 'door',   label: 'Doors ($ / door)' },
-      { key: 'window', label: 'Windows ($ / window)' },
-    ],
+    rates: COMMERCIAL_RATE_FIELDS['commercial-exterior'], // defined in common.js
     notesPlaceholder: 'Additional notes for this area (optional) — e.g. lift access, scrape and prime peeling spots',
     ratesHint: 'What the customer pays for each surface on this job. Walls are per square foot of surface, not per coat.',
     rateOnlyHint: 'Doors and windows are billed by rate only — no separate cost is figured for them.',
@@ -86,6 +76,7 @@ const cents = n => Math.round(n * 100) / 100;
 function createCommercialEstimator(root, key, cfg){
   const S = cfg.surfaces, U = cfg.unit;
   const rateKeys = cfg.rates.map(r => r.key);
+  const startRates = getSettings().commercialRates[key] || {};   // Settings → Commercial rates
 
   root.innerHTML = calculatorLayoutHtml(
     clientCardHtml() + `
@@ -97,7 +88,7 @@ function createCommercialEstimator(root, key, cfg){
         <div class="card-body">
           <p class="sub">${cfg.ratesHint}</p>
           <div class="grid cols-2">
-            ${cfg.rates.map(r => `<div class="field"><label>${r.label}</label><input type="number" data-f="rate-${r.key}" value="0" min="0" step="0.01"></div>`).join('\n            ')}
+            ${cfg.rates.map(r => `<div class="field"><label>${r.label}</label><input type="number" data-f="rate-${r.key}" value="${startRates[r.key] ?? 0}" min="0" step="0.01"></div>`).join('\n            ')}
           </div>
         </div>
       </div>
@@ -529,10 +520,7 @@ function createCommercialEstimator(root, key, cfg){
       row.querySelector('.e-enabled').checked = enabled;
       row.classList.toggle('disabled', !enabled);
     });
-    if (!list || list.length === 0){
-      addEmployee('Employee 1', 20, 90);
-      addEmployee('Employee 2', 20, 90);
-    }
+    if (!list || list.length === 0) addStartingCrew(addEmployee);
   }
 
   function exportEstimate(){ downloadEstimateFile(getEstimateData()); }
@@ -547,7 +535,7 @@ function createCommercialEstimator(root, key, cfg){
     $('wallsList').innerHTML = '';
     wallCount = 0;
     loadEmployees([]);
-    resetSharedFields($, rateKeys.map(k => `rate-${k}`));
+    resetSharedFields($, key);
     recalc();
     drafts.clear();
   }
@@ -556,8 +544,7 @@ function createCommercialEstimator(root, key, cfg){
   $('estDate').value = todayISO();
   $('projectNumber').value = generateProjectNumber();
   addArea();
-  addEmployee('Employee 1', 20, 90);
-  addEmployee('Employee 2', 20, 90);
+  addStartingCrew(addEmployee);        // Settings → Crew
   recalc();
   drafts.restore();
 
