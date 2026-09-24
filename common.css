@@ -426,6 +426,23 @@
   .p-sig-labels{ display:flex; gap:24px; margin-top:4px; }
   .p-sig-labels span:first-child{ flex:1; font-size:11px; color:var(--muted); }
   .p-sig-labels span:last-child{ width:120px; font-size:11px; color:var(--muted); }
+  /* 3-day cancellation notice (FTC Cooling-Off Rule): the rule asks for
+     at least 10-point bold, so these are set in pt, not px. */
+  .p-cancel-statement{ margin:0 0 6px; font-size:10.5pt; font-weight:800; line-height:1.4; color:var(--ink); }
+  .p-cancel-notice{ font-size:10pt; font-weight:700; line-height:1.22; color:var(--ink); }
+  .p-cancel-notice p{ margin:0 0 3.5pt; text-transform:uppercase; } /* matches the rule's printed form */
+  .p-cancel-notice h2{ margin:2pt 0 3pt; font-size:12.5pt; font-weight:800; text-transform:uppercase; letter-spacing:.04em; text-align:center; }
+  .p-cancel-top{ display:flex; justify-content:space-between; gap:12px; font-size:8.5pt; font-weight:600; color:var(--muted); }
+  .p-cancel-date{ text-align:center; }
+  .p-cancel-fill{ border-bottom:1px solid var(--ink); padding:0 2px; white-space:nowrap; }
+  .p-cancel-caption{ font-size:8.5pt; font-weight:600; }
+  .p-cancel-sig{ margin-top:0; }
+  .p-cancel-sig .p-sig-line, .p-cancel-sig .p-sig-date-line{ height:20px; }
+  .p-cancel-notice .p-sig-labels span{ font-weight:600; }
+  .p-cut-line{ position:relative; margin:12pt 0 8pt; border-top:1px dashed var(--ink); text-align:center; }
+  .p-cut-line span{ position:relative; top:-0.7em; padding:0 8px; background:var(--paper); font-size:8pt; font-weight:600; color:var(--ink); }
+  .p-cancel-page .p-cancel-notice{ break-inside:avoid; page-break-inside:avoid; }
+
   .p-internal-copy{ padding-bottom:20px; border-bottom:2px dashed var(--line); margin-bottom:24px; }
   .material-row{ display:flex; align-items:center; gap:14px; padding:10px 0; border-bottom:1px dashed var(--line); }
   .material-row:last-of-type{ border-bottom:none; }

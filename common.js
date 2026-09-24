@@ -145,7 +145,14 @@ const CONFIG = {
   website: "truehuepaintingco.com",
   phone: "(402) 202-6216",
   instagram: "truehuepaintingco",
-  version: "7.3",
+  version: "7.4",
+  // Name + mailing address printed on the Notice of Cancellation (where a
+  // customer sends it to cancel). Keep in sync with the Services Agreement.
+  noticeName: "True Hue Painting Co.",
+  noticeAddress: "109 S Canopy St #637, Lincoln, NE 68508",
+  // Which calculators print the 3-day cancellation notice on the customer copy
+  // (FTC Cooling-Off Rule). Commercial customers generally aren't covered.
+  cancellationNotice: { residential: true, commercial: false },
 };
 
 const fmt = n => n.toLocaleString('en-US', {style:'currency', currency:'USD'});
@@ -177,6 +184,56 @@ function parseLocalDate(iso){
 }
 function formatLongDate(d){
   return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+/* ---------- Business days for the 3-day cancellation deadline ----------
+   The FTC Cooling-Off Rule counts every day except Sundays and federal
+   holidays. We skip both the actual holiday and its observed weekday (e.g. a
+   Saturday July 4 also skips Friday July 3) — erring toward giving the
+   customer an extra day, never one too few. */
+function federalHolidayKeys(year){
+  const key = d => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  const nth = (month, weekday, n) => {          // n-th weekday of a month (n = -1: last)
+    if (n > 0){
+      const d = new Date(year, month, 1);
+      d.setDate(1 + ((weekday - d.getDay() + 7) % 7) + (n - 1) * 7);
+      return d;
+    }
+    const d = new Date(year, month + 1, 0);     // last day of the month
+    d.setDate(d.getDate() - ((d.getDay() - weekday + 7) % 7));
+    return d;
+  };
+  const days = [
+    nth(0, 1, 3),   // Martin Luther King Jr. Day
+    nth(1, 1, 3),   // Washington's Birthday
+    nth(4, 1, -1),  // Memorial Day
+    nth(8, 1, 1),   // Labor Day
+    nth(9, 1, 2),   // Columbus Day
+    nth(10, 4, 4),  // Thanksgiving
+  ];
+  // Fixed-date holidays, plus their observed day when they land on a weekend.
+  [[0,1], [5,19], [6,4], [10,11], [11,25]].forEach(([m, dd]) => {
+    const d = new Date(year, m, dd);
+    days.push(d);
+    if (d.getDay() === 6) days.push(new Date(year, m, dd - 1));
+    if (d.getDay() === 0) days.push(new Date(year, m, dd + 1));
+  });
+  return new Set(days.map(key));
+}
+function isFederalHoliday(d){
+  // Check this year and next (a Saturday New Year's is observed on Dec 31).
+  const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  return federalHolidayKeys(d.getFullYear()).has(key) || federalHolidayKeys(d.getFullYear() + 1).has(key);
+}
+// Midnight of the third business day AFTER the transaction date.
+function cancellationDeadline(transactionDate){
+  const d = new Date(transactionDate.getFullYear(), transactionDate.getMonth(), transactionDate.getDate());
+  let counted = 0;
+  while (counted < 3){
+    d.setDate(d.getDate() + 1);
+    if (d.getDay() !== 0 && !isFederalHoliday(d)) counted++;
+  }
+  return d;
 }
 
 renderShell(); // header, nav, lock screen, icons, print area — before anything below looks them up
@@ -917,9 +974,64 @@ function customerAreaHtml(area, idx, notesPlaceholder){
     `;
 }
 
+// Does this page print the 3-day cancellation notice? (CONFIG.cancellationNotice)
+function showsCancellationNotice(){
+  return !!CONFIG.cancellationNotice[document.body.dataset.category];
+}
+
+// The FTC Cooling-Off Rule's required statement, in bold right above the
+// customer's signature line.
+function cancellationStatementHtml(){
+  return `
+      <p class="p-cancel-statement">You, the buyer, may cancel this transaction at any time prior to midnight of the third business day after the date of this transaction. See the attached notice of cancellation form for an explanation of this right.</p>
+    `;
+}
+
+// One Notice of Cancellation, worded as the FTC rule (16 CFR 429.1) requires,
+// with the transaction date, seller name/address, and deadline filled in.
+// The customer gets two: one to keep, one to send if they cancel.
+function cancellationNoticeHtml(f, copyLabel){
+  const deadline = cancellationDeadline(f.estDate);
+  return `
+      <div class="p-cancel-notice">
+        <div class="p-cancel-top">
+          <span>Project #${f.projectNumber}</span>
+          <span>${copyLabel}</span>
+        </div>
+        <h2>Notice of Cancellation</h2>
+        <p class="p-cancel-date"><span class="p-cancel-fill">${formatLongDate(f.estDate)}</span><br><span class="p-cancel-caption">(Date of transaction)</span></p>
+        <p>You may cancel this transaction, without any penalty or obligation, within three business days from the above date.</p>
+        <p>If you cancel, any property traded in, any payments made by you under the contract or sale, and any negotiable instrument executed by you will be returned within 10 business days following receipt by the seller of your cancellation notice, and any security interest arising out of the transaction will be cancelled.</p>
+        <p>If you cancel, you must make available to the seller at your residence, in substantially as good condition as when received, any goods delivered to you under this contract or sale, or you may, if you wish, comply with the instructions of the seller regarding the return shipment of the goods at the seller's expense and risk.</p>
+        <p>If you do make the goods available to the seller and the seller does not pick them up within 20 days of the date of your notice of cancellation, you may retain or dispose of the goods without any further obligation. If you fail to make the goods available to the seller, or if you agree to return the goods to the seller and fail to do so, then you remain liable for performance of all obligations under the contract.</p>
+        <p>To cancel this transaction, mail or deliver a signed and dated copy of this cancellation notice, or any other written notice, or send a telegram, to <span class="p-cancel-fill">${CONFIG.noticeName}</span>, at <span class="p-cancel-fill">${CONFIG.noticeAddress}</span> not later than midnight of <span class="p-cancel-fill">${formatLongDate(deadline)}</span>.</p>
+        <p>I hereby cancel this transaction.</p>
+        <div class="p-sig-row p-cancel-sig">
+          <span class="p-sig-line"></span>
+          <span class="p-sig-date-line"></span>
+        </div>
+        <div class="p-sig-labels"><span>Buyer's signature</span><span>Date</span></div>
+      </div>
+    `;
+}
+
+// Both copies, on their own page after the customer copy, split by a cut line.
+function cancellationNoticesPageHtml(f){
+  return `
+      <div class="print-page-break p-cancel-page">
+        ${cancellationNoticeHtml(f, 'Copy 1 of 2 — keep for your records')}
+        <div class="p-cut-line" aria-hidden="true"><span>✂ Detach here</span></div>
+        ${cancellationNoticeHtml(f, 'Copy 2 of 2 — send this copy to cancel')}
+      </div>
+    `;
+}
+
 // The customer's copy: header, client, priced areas, minimum charge (as its
-// own line), Cash / surcharge / Card price, deposit, notes, acceptance, signatures.
+// own line), Cash / surcharge / Card price, deposit, notes, acceptance, the
+// cancellation statement (Residential), signatures, then the two Notices of
+// Cancellation on their own page (Residential).
 function customerCopyHtml(f, areasHtml, P, card){
+  const withNotice = showsCancellationNotice();
   const minJobHtml = P.minJobAdjustment > 0 ? `
       <div class="p-room">
         <div class="p-room-head">
@@ -963,6 +1075,7 @@ function customerCopyHtml(f, areasHtml, P, card){
       <p class="p-accept">By signing below, the customer accepts this estimate and the ${CONFIG.businessName} Painting Services Agreement provided with it, which together make up the contract for this project.</p>
       <div class="p-signatures" style="margin-top:20px;">
         <div class="p-sig-block">
+          ${withNotice ? cancellationStatementHtml() : ''}
           <div class="p-sig-row">
             <span class="p-sig-line"></span>
             <span class="p-sig-date-line"></span>
@@ -977,6 +1090,7 @@ function customerCopyHtml(f, areasHtml, P, card){
           <div class="p-sig-labels"><span>Employee Signature</span><span>Date</span></div>
         </div>
       </div>
+      ${withNotice ? cancellationNoticesPageHtml(f) : ''}
     `;
 }
 
